@@ -11,15 +11,15 @@ xrange = [-5 20];
 if isglobalnorm
 	maxamp = 0;
 	for ie = 1:length(datastr)
-		maxamp = max(max(datastr(ie).data(:)),maxamp);
+		maxamp = max(max(datastr(ie).plot_data(:)),maxamp);
 	end
 	for ie = 1:length(datastr)
-		datastr(ie).normdata = datastr(ie).data(:)./maxamp;
+		datastr(ie).normdata = datastr(ie).plot_data(:)./maxamp;
 	end
 else
 	for ie=1:length(datastr)
-		maxamp = max(datastr(ie).data(:));
-		datastr(ie).normdata = datastr(ie).data(:)./maxamp;
+		maxamp = max(datastr(ie).plot_data(:));
+		datastr(ie).normdata = datastr(ie).plot_data(:)./maxamp;
 	end
 end
 
@@ -27,17 +27,18 @@ figure(fignum)
 clf
 hold on;
 for ie=1:length(datastr)
-	plot(datastr(ie).taxis(:),datastr(ie).normdata(:)*amp + ie,'k');
+	plot(datastr(ie).plot_taxis(:),datastr(ie).normdata(:)*amp + ie,'k');
 	if isfill
 		temp = datastr(ie).normdata(:);
 		temp(find(temp<0)) = 0;
-		area(datastr(ie).taxis(:),temp*amp + ie,ie,'facecolor','k');
+		area(datastr(ie).plot_taxis(:),temp*amp + ie,ie,'facecolor','k');
 	end
 	if isfield(datastr,'marker') && ~isempty(datastr(ie).marker);
-		plot(datastr(ie).marker.*[1,1],[-0.5 0.5]*amp + ie,'r','linewidth',2);
+		plot(datastr(ie).marker.*[1,1],[-0.5 0.5]*amp + ie,'r','linewidth',1);
 	end
 end
 ylim([0 length(datastr)+1]);
+plot([0 0],[0 length(datastr)+1],'r','linewidth',2);
 if ~isempty(xrange)
 	xlim(xrange);
 end

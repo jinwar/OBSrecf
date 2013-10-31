@@ -13,6 +13,8 @@ if taperwidth < 3
 	taperwidth = 3;
 end
 
+indata = indata(:);
+
 hanning_win = hanning(2*taperwidth);
 
 flat_hanning_win = ones(length(indata),1);

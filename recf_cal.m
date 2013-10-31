@@ -1,8 +1,10 @@
-function [recf_taxis recf] = recf_cal(timeaxis,dataZ,dataR,cut_win,gauss_para,waterlevel,timeshift)
+function [recf_taxis recf] = recf_cal(timeaxis,dataZ,dataR,cut_win,gauss_para,waterlevel,timeshift,isfigure)
 %% function to use deconvolution method to calculate receiver function waveforms
 %  Written by Ge Jin, jinwar@gmail.com, 2013-10-26
 
-isfigure = 0;
+if ~exist('isfigure','var')
+	isfigure = 0;
+end
 
 if ~exist('cut_win','var')
 	cut_win = [timeaxis(1) timeaxis(end)];
@@ -61,15 +63,18 @@ fft_recf = fft_recf.*exp(-i.*waxis(:).*timeshift);
 recf = real(ifft(fft_recf));
 
 if isfigure
-	figure(69)
+	xrange = [cut_win(1) cut_win(2)-50];
+	figure(isfigure)
 	clf
 	subplot(3,1,1)
 	ind = find(timeaxis >= cut_win(1) & timeaxis <= cut_win(2));
 	plot(timeaxis(ind),win_Z);
 	title('Z');
+	if ~isempty(xrange), xlim(xrange); end
 	subplot(3,1,2)
 	plot(timeaxis(ind),win_R);
 	title('R');
+	if ~isempty(xrange), xlim(xrange); end
 	subplot(3,1,3)
 	plot(recf_taxis,recf);
 	title('RECF');

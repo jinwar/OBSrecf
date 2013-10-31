@@ -1,4 +1,4 @@
-function sta_recf_cal(stnm);
+function sta_recf_cal_Q(stnm,Vp,VpVs);
 %% function to calculate the all the receiver funtions of one station
 %	written by Ge jin, jinwar@gmail.com, 2013-10-27
 
@@ -8,7 +8,9 @@ pre_filter = [0.2 2];
 gauss_para = 2;
 waterlevel = 0.01;
 timeshift = 5;
-rel_cut_win = [-10 60];
+rel_cut_win = [-5 60];
+Vp_water = 1.5;
+Vs = Vp./VpVs;
 
 files = dir(['./data/',stnm,'/*.Rrec.sac']);
 
@@ -49,13 +51,37 @@ for ie = 1:eventnum
 	f_dataR = filter(b,a,dataR);
 	f_dataT = filter(b,a,dataT);
 
+	% calculate the incident angle
+	epidist = distance(sacBHZ.EVLA,sacBHZ.EVLO,sacBHZ.STLA,sacBHZ.STLO);
+	P_info = tauptime('mod','prem','depth',sacBHZ.EVDP,'ph','P','deg',epidist);
+
+%	ind = find(timeaxis > marker & timeaxis < marker + 2);
+%	[inc_angle diagamp] = find_inc_angle(f_dataZ(ind),f_dataR(ind));
+%	pre_vp = sind(inc_angle)./(P_info(1).rayparameter./deg2km(1));
+%	disp(['inc_angle: ', num2str(inc_angle),' Diag ratio:',num2str(diagamp(1)./diagamp(2))...
+%			,' Predicted Vp: ',num2str(pre_vp)])
+
+	% calculate P
+	inc_angle = rayp2inc(P_info(1).rayparameter,Vp,6371);
+	disp(['event: ',files(ie).name(1:10),' RayP:',num2str(P_info(1).rayparameter), ...
+		' P inc_angle: ', num2str(inc_angle)]);
+	f_dataP = f_dataZ*cosd(inc_angle) + f_dataR*sind(inc_angle);
+
+	% calculate SV
+%	inc_angle = rayp2inc(P_info(1).rayparameter,Vs,6371);
+%	disp(['S inc_angle: ', num2str(inc_angle)]);
+	f_dataSV = -f_dataZ*sind(inc_angle) + f_dataR*cosd(inc_angle);
+
+	
 	% Calculate receiver function
-	[recf_taxis recf] = recf_cal(timeaxis,f_dataZ,f_dataR,cut_win,gauss_para,waterlevel,timeshift);
-	[recf_taxis recf_T] = recf_cal(timeaxis,f_dataZ,f_dataT,cut_win,gauss_para,waterlevel,timeshift);
+	[recf_taxis recf_R] = recf_cal(timeaxis,f_dataZ,f_dataR,cut_win,gauss_para,waterlevel,timeshift);
+	[recf_taxis recf_SV] = recf_cal(timeaxis,f_dataP,f_dataSV,cut_win,gauss_para,waterlevel,timeshift);
+	[recf_taxis recf_T] = recf_cal(timeaxis,f_dataP,f_dataT,cut_win,gauss_para,waterlevel,timeshift);
 
 	% fill in data structure
 	recfs(ie).recf_taxis = recf_taxis(:);
-	recfs(ie).recf = recf(:);
+	recfs(ie).recf_R = recf_R(:);
+	recfs(ie).recf_SV = recf_SV(:);
 	recfs(ie).recf_T = recf_T(:);
 	recfs(ie).evla = sacBHZ.EVLA;
 	recfs(ie).evlo = sacBHZ.EVLO;
@@ -69,7 +95,7 @@ for ie = 1:eventnum
 	recfs(ie).data_taxis = timeaxis;
 	recfs(ie).cut_win = cut_win;
 	recfs(ie).P = marker;
-	recfs(ie).marker = 5;
+	recfs(ie).marker = 3;
 
 end
 
@@ -78,18 +104,29 @@ recfs = sort_recfs(recfs);
 % plot R receiver function 
 for ie = 1:length(recfs)
 	recfs(ie).plot_taxis = recfs(ie).recf_taxis;
-	recfs(ie).plot_data = recfs(ie).recf;
+	recfs(ie).plot_data = recfs(ie).recf_R;
 end
-plot_waveforms(33,recfs);
-title([stnm,':R-Recf'])
+plot_waveforms(34,recfs);
+title([stnm,': R-Recf'])
+set(gcf,'position',[ 100    100   600   800]);
+
+% plot SV receiver function 
+for ie = 1:length(recfs)
+	recfs(ie).plot_taxis = recfs(ie).recf_taxis;
+	recfs(ie).plot_data = recfs(ie).recf_SV;
+end
+plot_waveforms(35,recfs);
+title([stnm,': Q-Recf'])
+set(gcf,'position',[ 700    100   600   800]);
 
 % plot T receiver function 
 for ie = 1:length(recfs)
 	recfs(ie).plot_taxis = recfs(ie).recf_taxis;
 	recfs(ie).plot_data = recfs(ie).recf_T;
 end
-plot_waveforms(34,recfs);
-title([stnm,':T-Recf'])
+plot_waveforms(36,recfs);
+title([stnm,':T Recf'])
+set(gcf,'position',[ 1300    100   600   800]);
 
-%save(['data/',stnm,'.mat'],'recfs');
+%save(['data/',stnm,'_Q.mat'],'recfs');
 
